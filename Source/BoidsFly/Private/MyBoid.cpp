@@ -48,7 +48,7 @@ void AMyBoid::Tick(float DeltaTime)
 		int BoidNum = 0;
 		for (AMyBoid* Bird : NearBoids)
 		{
-
+			OffSet
 		}
 
 	}
