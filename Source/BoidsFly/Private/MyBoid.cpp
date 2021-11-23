@@ -69,11 +69,30 @@ void AMyBoid::Tick(float DeltaTime)
 		if (BoidNum > 0)
 		{
 			CurAcceleration += (Center / BoidNum - GetActorLocation()) * CenterWeight;
-			CurAcceleration += Flow / (float)BoidNum * FlowWeight;
+			CurAcceleration += (Flow + GoalDirection) / (float)BoidNum * FlowWeight;
 		}
 		CurAcceleration += Aov * AovWeight;
 		CurAcceleration = CurAcceleration.GetSafeNormal(0.0001f) * FMath::Clamp(CurAcceleration.Size(), 0.0f, 1.0f);
-		//UE_LOG(LogTemp, Warning, TEXT("CurAcce = %f"), CurAcceleration.Size());
+		UE_LOG(LogTemp, Warning, TEXT("NearBoids"));
+	}
+
+	if (GetRaysVectors())
+	{
+		for (FVector RayVector : RaysVectors)
+		{
+			FHitResult Hit;
+			FVector End = GetActorLocation() + RayVector * ViewRadius;
+			UKismetSystemLibrary::SphereTraceSingleForObjects(this, GetActorLocation(), End, 5.0f,
+				ObjectTypesWall, false, IgnoryActors, EDrawDebugTrace::None, Hit, true, FLinearColor::Green, FLinearColor::Red, 0.2f);
+			if (!Hit.bBlockingHit)
+			{
+				CurAcceleration += RayVector * CollosionWeight;
+				IsCollision = true;
+				GetWorldTimerManager().SetTimer(CollisionTimer, this, &AMyBoid::SetIsCollosionFalse, LeaveTime, false, LeaveTime);
+				UE_LOG(LogTemp, Warning, TEXT("MeetCollosion"));
+				break;
+			}
+		}
 	}
 
 	if (IsCollision)
@@ -84,27 +103,11 @@ void AMyBoid::Tick(float DeltaTime)
 		if (Hit.bBlockingHit)
 		{
 			FVector OffSetCollosion = GetActorLocation() - Hit.ImpactPoint;
-			CurAcceleration += OffSetCollosion*leaveWallWeight / (OffSetCollosion.Size() * OffSetCollosion.Size());
+			CurAcceleration += OffSetCollosion * leaveWallWeight / (OffSetCollosion.Size() * OffSetCollosion.Size());
 		}
+		UE_LOG(LogTemp, Warning, TEXT("leaveWall"));
 	}
-	
-	if (GetRaysVectors())
-	{
-		for (FVector RayVector : RaysVectors)
-		{
-			FHitResult Hit;
-			FVector End = GetActorLocation() + RayVector * ViewRadius;
-			UKismetSystemLibrary::SphereTraceSingleForObjects(this, GetActorLocation(), End, 5.0f,
-				ObjectTypesWall, false, IgnoryActors, EDrawDebugTrace::None, Hit, true);
-			if (!Hit.bBlockingHit)
-			{
-				CurAcceleration = RayVector * 2.0f;
-				IsCollision = true;
-				GetWorldTimerManager().SetTimer(CollisionTimer, this, &AMyBoid::SetIsCollosionFalse, 2.0f, false, 2.0f);
-				break;
-			}
-		}
-	}
+
 	CurVelocity += CurAcceleration;
 	CurVelocity = CurVelocity.GetSafeNormal(0.0001f) * FMath::Clamp(CurVelocity.Size(), SpeedMin, SpeedMax);
 	FVector NewLoc = GetActorLocation() + CurVelocity;
@@ -140,6 +143,8 @@ bool AMyBoid::GetRaysVectors()
 		{
 			RaysVectors.Add((GetActorRightVector() - GetActorForwardVector()) * (float(i) / float(RaysNum)) + GetActorForwardVector());
 			RaysVectors.Add((GetActorRightVector() * -1.0f - GetActorForwardVector()) * (float(i) / float(RaysNum)) + GetActorForwardVector());
+			RaysVectors.Add((GetActorUpVector() - GetActorForwardVector()) * (float(i) / float(RaysNum)) + GetActorForwardVector());
+			RaysVectors.Add((GetActorUpVector() * -1.0f - GetActorForwardVector()) * (float(i) / float(RaysNum)) + GetActorForwardVector());
 		}
 		return true;
 	}

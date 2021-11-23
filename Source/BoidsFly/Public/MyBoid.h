@@ -42,9 +42,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float FreeWeight = 0.5;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	float leaveWallWeight = 2.0;
+	float CollosionWeight = 2.0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	float leaveWallWeight = 1.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float TestBoxSize = 250;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	float LeaveTime = 1.0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	FVector GoalDirection;
+
 private:
 	/*Value*/
 	FVector CurVelocity;
