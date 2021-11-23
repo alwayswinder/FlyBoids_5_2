@@ -22,16 +22,41 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	FVector GetCurVelocity();
+	bool GetIsCollosion();
 	/*Value*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	float SpeedMin = 0.5;
+	float SpeedMin = 1.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	float SpeedMax = 1.0;
+	float SpeedMax = 2.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	float ViewRadius = 50.0;
+	float ViewRadius = 100.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float AovRadius = 20.0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	float CenterWeight = 0.05;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	float FlowWeight = 1.0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	float AovWeight = 1.0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	float FreeWeight = 0.5;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	float leaveWallWeight = 2.0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	float TestBoxSize = 250;
 private:
 	/*Value*/
 	FVector CurVelocity;
+	FVector Aov;
+	bool IsCollision = false;
+	TArray<FVector> RaysVectors;
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypesBird;
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypesWall;
+	TArray<AActor*> IgnoryActors;
+	FTimerHandle CollisionTimer;
+
+	bool GetRaysVectors();
+	void SetIsCollosionFalse();
+	float ClampPos(float Pos);
 };
