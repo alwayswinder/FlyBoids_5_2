@@ -72,7 +72,7 @@ void AMyBoid::Tick(float DeltaTime)
 			CurAcceleration += (Flow + GoalDirection) / (float)BoidNum * FlowWeight;
 		}
 		CurAcceleration += Aov * AovWeight;
-		CurAcceleration = CurAcceleration.GetSafeNormal(0.0001f) * FMath::Clamp(CurAcceleration.Size(), 0.0f, 1.0f);
+		//CurAcceleration = CurAcceleration.GetSafeNormal(0.0001f) * FMath::Clamp(CurAcceleration.Size(), 0.0f, 1.0f);
 		UE_LOG(LogTemp, Warning, TEXT("NearBoids"));
 	}
 
@@ -107,6 +107,8 @@ void AMyBoid::Tick(float DeltaTime)
 		}
 		UE_LOG(LogTemp, Warning, TEXT("leaveWall"));
 	}
+
+	CurAcceleration = CurAcceleration.GetSafeNormal(0.0001f) * FMath::Clamp(CurAcceleration.Size(), 0.0f, 1.0f);
 
 	CurVelocity += CurAcceleration;
 	CurVelocity = CurVelocity.GetSafeNormal(0.0001f) * FMath::Clamp(CurVelocity.Size(), SpeedMin, SpeedMax);
