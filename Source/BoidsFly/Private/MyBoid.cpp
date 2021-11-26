@@ -25,55 +25,59 @@ void AMyBoid::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	FVector CurAcceleration = FVector(0,0,0);
 
-	TArray<AMyBoid*> NearBoids;
-
-	TArray<FHitResult> Hits;
-	UKismetSystemLibrary::SphereTraceMultiForObjects(this, GetActorLocation(), GetActorLocation(), ViewRadius,
-		ObjectTypesBird, false, IgnoryActors, EDrawDebugTrace::None, Hits, true);
-	
-	for (FHitResult hit : Hits)
+	//æ€∫œ£¨Õ¨––£¨±‹»√
+	if (FindOther)
 	{
-		if (hit.bBlockingHit)
+		TArray<AMyBoid*> NearBoids;
+
+		TArray<FHitResult> Hits;
+		UKismetSystemLibrary::SphereTraceMultiForObjects(this, GetActorLocation(), GetActorLocation(), ViewRadius,
+			ObjectTypesBird, false, IgnoryActors, EDrawDebugTrace::None, Hits, true);
+
+		for (FHitResult hit : Hits)
 		{
-			AMyBoid* Bird = Cast<AMyBoid>(hit.Actor);
-			if (Bird && !Bird->GetIsCollosion())
+			if (hit.bBlockingHit)
 			{
-				NearBoids.Add(Bird);
-			}
-		}
-	}
-	if (NearBoids.Num() > 0 && !IsCollision)
-	{
-		FVector Center = FVector(0, 0, 0);
-		Aov = Aov * FreeWeight;
-		FVector Flow = FVector(0, 0, 0);
-		int BoidNum = 0;
-
-		for (AMyBoid* Bird : NearBoids)
-		{
-			FVector OffsetVector = Bird->GetActorLocation() - GetActorLocation();
-			float Distence = OffsetVector.Size();
-
-			if (Distence <= ViewRadius)
-			{
-				Center += Bird->GetActorLocation();
-				Flow += Bird->GetCurVelocity();
-				BoidNum++;
-
-				if (Distence <= AovRadius)
+				AMyBoid* Bird = Cast<AMyBoid>(hit.Actor);
+				if (Bird && !Bird->GetIsCollosion())
 				{
-					Aov -= OffsetVector / (Distence * Distence);
+					NearBoids.Add(Bird);
 				}
 			}
 		}
-		if (BoidNum > 0)
+		if (NearBoids.Num() > 0 && !IsCollision)
 		{
-			CurAcceleration += (Center / BoidNum - GetActorLocation()) * CenterWeight;
-			CurAcceleration += (Flow + GoalDirection) / (float)BoidNum * FlowWeight;
+			FVector Center = FVector(0, 0, 0);
+			Aov = Aov * FreeWeight;
+			FVector Flow = FVector(0, 0, 0);
+			int BoidNum = 0;
+
+			for (AMyBoid* Bird : NearBoids)
+			{
+				FVector OffsetVector = Bird->GetActorLocation() - GetActorLocation();
+				float Distence = OffsetVector.Size();
+
+				if (Distence <= ViewRadius)
+				{
+					Center += Bird->GetActorLocation();
+					Flow += Bird->GetCurVelocity();
+					BoidNum++;
+
+					if (Distence <= AovRadius)
+					{
+						Aov -= OffsetVector / (Distence * Distence);
+					}
+				}
+			}
+			if (BoidNum > 0)
+			{
+				CurAcceleration += (Center / BoidNum - GetActorLocation()) * CenterWeight;
+				CurAcceleration += (Flow + GoalDirection) / (float)BoidNum * FlowWeight;
+			}
+			CurAcceleration += Aov * AovWeight;
+			//CurAcceleration = CurAcceleration.GetSafeNormal(0.0001f) * FMath::Clamp(CurAcceleration.Size(), 0.0f, 1.0f);
+			//UE_LOG(LogTemp, Warning, TEXT("NearBoids"));
 		}
-		CurAcceleration += Aov * AovWeight;
-		//CurAcceleration = CurAcceleration.GetSafeNormal(0.0001f) * FMath::Clamp(CurAcceleration.Size(), 0.0f, 1.0f);
-		UE_LOG(LogTemp, Warning, TEXT("NearBoids"));
 	}
 
 	if (GetRaysVectors())
@@ -89,7 +93,7 @@ void AMyBoid::Tick(float DeltaTime)
 				CurAcceleration += RayVector * CollosionWeight;
 				IsCollision = true;
 				GetWorldTimerManager().SetTimer(CollisionTimer, this, &AMyBoid::SetIsCollosionFalse, LeaveTime, false, LeaveTime);
-				UE_LOG(LogTemp, Warning, TEXT("MeetCollosion"));
+				//UE_LOG(LogTemp, Warning, TEXT("MeetCollosion"));
 				break;
 			}
 		}
@@ -105,7 +109,7 @@ void AMyBoid::Tick(float DeltaTime)
 			FVector OffSetCollosion = GetActorLocation() - Hit.ImpactPoint;
 			CurAcceleration += OffSetCollosion * leaveWallWeight / (OffSetCollosion.Size() * OffSetCollosion.Size());
 		}
-		UE_LOG(LogTemp, Warning, TEXT("leaveWall"));
+		//UE_LOG(LogTemp, Warning, TEXT("leaveWall"));
 	}
 
 	CurAcceleration = CurAcceleration.GetSafeNormal(0.0001f) * FMath::Clamp(CurAcceleration.Size(), 0.0f, 1.0f);
@@ -168,4 +172,3 @@ float AMyBoid::ClampPos(float Pos)
 	}
 	return Pos;
 }
-

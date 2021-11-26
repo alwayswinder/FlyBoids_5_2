@@ -6,6 +6,9 @@
 #include "GameFramework/Actor.h"
 #include "MyBoid.generated.h"
 
+
+
+
 UCLASS()
 class BOIDSFLY_API AMyBoid : public AActor
 {
@@ -52,6 +55,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	FVector GoalDirection;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	bool FindOther = true;
 private:
 	/*Value*/
 	FVector CurVelocity;

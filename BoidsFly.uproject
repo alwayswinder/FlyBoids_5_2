@@ -7,7 +7,7 @@
 		{
 			"Name": "BoidsFly",
 			"Type": "Runtime",
-			"LoadingPhase": "Default",
+			"LoadingPhase": "PostConfigInit",
 			"AdditionalDependencies": [
 				"Engine"
 			]

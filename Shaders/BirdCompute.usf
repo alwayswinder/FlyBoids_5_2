@@ -1,0 +1,12 @@
+#include "/Engine/Public/Platform.ush"
+static const int threadGroupSize = 2;
+
+RWBuffer<int> TestParameters;
+int NumBoid;
+
+
+[numthreads(threadGroupSize, 1, 1)]
+void MainCS(uint3 ThreadId : SV_DispatchThreadID)
+{
+	TestParameters[ThreadId.x] += ThreadId.x;
+}
