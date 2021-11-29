@@ -17,7 +17,10 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 	
+	UPROPERTY(BlueprintReadWrite, Category = "Boid")
+	bool UseGPU = true;
 	UFUNCTION(BlueprintCallable)
 	void ComputeTest();
 
+	FCriticalSection RenderEveryFrameLock;
 };

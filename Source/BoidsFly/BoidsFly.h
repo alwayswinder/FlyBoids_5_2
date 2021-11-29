@@ -5,15 +5,28 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-struct FMyBoidParameters
-{
-	TArray<int> TestInts;
 
-	FMyBoidParameters()
+struct FMyBoidBase
+{
+	FMyBoidBase(FVector Pos, FVector Vel) 
 	{
-		TestInts.Add(0);
-		TestInts.Add(0);
+		Position = Pos;
+		Velocity = Vel;
 	}
+	FVector Position = FVector(0, 0, 0);
+	FVector Velocity = FVector(0, 0, 0);
+	FVector Center = FVector(0, 0, 0);
+	FVector Flow = FVector(0, 0, 0);
+	FVector AovOut = FVector(0, 0, 0);
+	int BoidNearNum = 0;
+};
+
+struct FMyBoidAttribute
+{
+	TMap<int, FMyBoidBase> BoidBase;
+	int NumTotal = 0;
+	float AovRadius = 20;
+	float ViewRadius = 100;
 };
 
 class FMyBoidModule : public IModuleInterface
@@ -30,16 +43,12 @@ public:
 	}
 	void RunComputeShader(FRHICommandListImmediate& RHICmdList);
 
-	void UpdateParameters(struct FMyBoidParameters& BoidParameters);
-
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
-
-	struct FMyBoidParameters CachedBoidParameters;
-
+	FMyBoidAttribute BoidInfoSave;
+	
 private:
-	FRWBuffer TestParametes;
-	FCriticalSection RenderEveryFrameLock;
-	volatile bool bCachedParametersValid;
+	FStructuredBufferRHIRef BoidBaseBuffer;
+	FUnorderedAccessViewRHIRef BoidBaseRecordsUAV;
 };
 

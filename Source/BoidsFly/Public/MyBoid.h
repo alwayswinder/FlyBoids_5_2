@@ -29,9 +29,11 @@ public:
 	bool GetIsCollosion();
 	/*Value*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	float SpeedMin = 1.0;
+	int BirdId = 0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	float SpeedMax = 2.0;
+	float SpeedMin = 0.5;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	float SpeedMax = 0.7;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float ViewRadius = 100.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
@@ -43,24 +45,32 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float AovWeight = 1.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	float FreeWeight = 0.5;
+	float FreeWeight = 0.9;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	float CollosionWeight = 2.0;
+	float CollosionWeight = 0.02;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	float leaveWallWeight = 1.0;
+	float leaveWallWeight = 0.5;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	float TestBoxSize = 250;
+	float TestBoxSize = 1000;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	float LeaveTime = 1.0;
+	float LeaveTime = 0.5;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	FVector GoalDirection;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	FVector SpawnLocation;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	bool FindOther = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	bool UseGPU = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	FVector Aov;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	FVector AovOut;
 private:
 	/*Value*/
 	FVector CurVelocity;
-	FVector Aov;
 	bool IsCollision = false;
 	TArray<FVector> RaysVectors;
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypesBird;
@@ -70,5 +80,5 @@ private:
 
 	bool GetRaysVectors();
 	void SetIsCollosionFalse();
-	float ClampPos(float Pos);
+	FVector ClampPos(FVector Pos);
 };

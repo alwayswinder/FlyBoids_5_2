@@ -18,9 +18,11 @@ class FMyBoidComputeShader : public FGlobalShader
 	SHADER_USE_PARAMETER_STRUCT(FMyBoidComputeShader, FGlobalShader);
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-		SHADER_PARAMETER_UAV(RWBuffer<int>, TestParameters)
-		SHADER_PARAMETER(int, NumBoid)
-		END_SHADER_PARAMETER_STRUCT()
+		SHADER_PARAMETER(int, NumTotal)
+		SHADER_PARAMETER(float, AovRadius)
+		SHADER_PARAMETER(float, ViewRadius)
+		SHADER_PARAMETER_UAV(RWBuffer<FMyBoidBase>, BoidBaseParam)
+	END_SHADER_PARAMETER_STRUCT()
 
 public:
 	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
@@ -38,45 +40,39 @@ IMPLEMENT_SHADER_TYPE(, FMyBoidComputeShader, TEXT("/MyShaders/BirdCompute.usf")
 
 void FMyBoidModule::RunComputeShader(FRHICommandListImmediate& RHICmdList)
 {
-	TResourceArray<int32> InitialTestParams;
-	InitialTestParams.Add(CachedBoidParameters.TestInts[0]);
-	InitialTestParams.Add(CachedBoidParameters.TestInts[1]);
-	TestParametes.Initialize(4, 2, PF_R32_SINT, BUF_UnorderedAccess | BUF_SourceCopy, TEXT("TestParametes"), &InitialTestParams);
+	TResourceArray<FMyBoidBase> InitialBoidBaseParams;
 
-	//QUICK_SCOPE_CYCLE_COUNTER(STAT_BoidFly_ComputeShader); // Used to gather CPU profiling data for the UE4 session frontend
+	for (int i=0; i<BoidInfoSave.NumTotal; i++)
+	{
+		InitialBoidBaseParams.Add(BoidInfoSave.BoidBase[i]);
+	}
+
+	//BoidInputBuffer.Initialize(sizeof(FMyBoidInput), 10, PF_Unknown, BUF_UnorderedAccess | BUF_SourceCopy, TEXT("BoidInputBuffer"), &InitialInputParams);
+	
+	FRHIResourceCreateInfo CreateInfoBoidBase(&InitialBoidBaseParams);
+	BoidBaseBuffer = RHICreateStructuredBuffer(sizeof(FMyBoidBase), sizeof(FMyBoidBase) * BoidInfoSave.NumTotal, BUF_UnorderedAccess | BUF_ShaderResource, CreateInfoBoidBase);
+	BoidBaseRecordsUAV = RHICreateUnorderedAccessView(BoidBaseBuffer, false, false);
+
+	QUICK_SCOPE_CYCLE_COUNTER(STAT_BoidFly_ComputeShader); // Used to gather CPU profiling data for the UE4 session frontend
 
 	TShaderMapRef<FMyBoidComputeShader> ComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
-	RHICmdList.Transition(FRHITransitionInfo(TestParametes.UAV, ERHIAccess::UAVCompute, ERHIAccess::SRVMask | ERHIAccess::CopySrc));
+	RHICmdList.Transition(FRHITransitionInfo(BoidBaseRecordsUAV, ERHIAccess::UAVCompute, ERHIAccess::SRVMask | ERHIAccess::CopySrc));
 
 	FMyBoidComputeShader::FParameters PassParameters;
-	PassParameters.TestParameters = TestParametes.UAV;
-	PassParameters.NumBoid = 2;
+	PassParameters.BoidBaseParam = BoidBaseRecordsUAV;
+	PassParameters.NumTotal = BoidInfoSave.NumTotal;
+	PassParameters.AovRadius = BoidInfoSave.AovRadius;
+	PassParameters.ViewRadius = BoidInfoSave.ViewRadius;
 
-	FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, PassParameters, FIntVector(2, 1, 1));
+	FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, PassParameters, FIntVector(BoidInfoSave.NumTotal, 1, 1));
 
-	int32* Buffer = (int32*)RHICmdList.LockVertexBuffer(TestParametes.Buffer, 0, sizeof(int32)*2, EResourceLockMode::RLM_ReadOnly);
-	CachedBoidParameters.TestInts[0] = Buffer[0];
-	CachedBoidParameters.TestInts[1] = Buffer[1];
-	RHICmdList.UnlockVertexBuffer(TestParametes.Buffer);
-
-	/*FRHIGPUBufferReadback NumBricksReadback(TEXT("NumBricksReadback"));
-	NumBricksReadback.EnqueueCopy(RHICmdList, TestParametes.Buffer);
-	RHICmdList.BlockUntilGPUIdle();
-	if (NumBricksReadback.IsReady())
+	FMyBoidBase* Buffer = (FMyBoidBase*)RHICmdList.LockStructuredBuffer(BoidBaseBuffer, 0, sizeof(FMyBoidBase)*BoidInfoSave.NumTotal, EResourceLockMode::RLM_ReadOnly);
+	for (int i=0; i<BoidInfoSave.NumTotal; i++)
 	{
-		int32* Buffer = (int32*)NumBricksReadback.Lock(8);
-		CachedBoidParameters.TestInts[0] = Buffer[0];
-		CachedBoidParameters.TestInts[1] = Buffer[1];
-		NumBricksReadback.Unlock();
-	}*/
-}
+		BoidInfoSave.BoidBase[i] = Buffer[i];
+	}
+	RHICmdList.UnlockStructuredBuffer(BoidBaseBuffer);
 
-void FMyBoidModule::UpdateParameters(struct FMyBoidParameters& BoidParameters)
-{
-	RenderEveryFrameLock.Lock();
-	CachedBoidParameters = BoidParameters;
-	bCachedParametersValid = true;
-	RenderEveryFrameLock.Unlock();
 }
 
 void FMyBoidModule::StartupModule()

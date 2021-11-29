@@ -3,6 +3,10 @@
 
 #include "MyBoid.h"
 #include "Kismet\KismetSystemLibrary.h"
+#include "../BoidsFly.h"
+
+
+
 // Sets default values
 AMyBoid::AMyBoid()
 {
@@ -28,55 +32,72 @@ void AMyBoid::Tick(float DeltaTime)
 	//æ€∫œ£¨Õ¨––£¨±‹»√
 	if (FindOther)
 	{
-		TArray<AMyBoid*> NearBoids;
-
-		TArray<FHitResult> Hits;
-		UKismetSystemLibrary::SphereTraceMultiForObjects(this, GetActorLocation(), GetActorLocation(), ViewRadius,
-			ObjectTypesBird, false, IgnoryActors, EDrawDebugTrace::None, Hits, true);
-
-		for (FHitResult hit : Hits)
+		if (!UseGPU)
 		{
-			if (hit.bBlockingHit)
+			TArray<AMyBoid*> NearBoids;
+
+			TArray<FHitResult> Hits;
+			UKismetSystemLibrary::SphereTraceMultiForObjects(this, GetActorLocation(), GetActorLocation(), ViewRadius,
+				ObjectTypesBird, false, IgnoryActors, EDrawDebugTrace::None, Hits, true);
+
+			for (FHitResult hit : Hits)
 			{
-				AMyBoid* Bird = Cast<AMyBoid>(hit.Actor);
-				if (Bird && !Bird->GetIsCollosion())
+				if (hit.bBlockingHit)
 				{
-					NearBoids.Add(Bird);
-				}
-			}
-		}
-		if (NearBoids.Num() > 0 && !IsCollision)
-		{
-			FVector Center = FVector(0, 0, 0);
-			Aov = Aov * FreeWeight;
-			FVector Flow = FVector(0, 0, 0);
-			int BoidNum = 0;
-
-			for (AMyBoid* Bird : NearBoids)
-			{
-				FVector OffsetVector = Bird->GetActorLocation() - GetActorLocation();
-				float Distence = OffsetVector.Size();
-
-				if (Distence <= ViewRadius)
-				{
-					Center += Bird->GetActorLocation();
-					Flow += Bird->GetCurVelocity();
-					BoidNum++;
-
-					if (Distence <= AovRadius)
+					AMyBoid* Bird = Cast<AMyBoid>(hit.Actor);
+					if (Bird && !Bird->GetIsCollosion())
 					{
-						Aov -= OffsetVector / (Distence * Distence);
+						NearBoids.Add(Bird);
 					}
 				}
 			}
-			if (BoidNum > 0)
+			if (NearBoids.Num() > 0 && !IsCollision)
 			{
-				CurAcceleration += (Center / BoidNum - GetActorLocation()) * CenterWeight;
-				CurAcceleration += (Flow + GoalDirection) / (float)BoidNum * FlowWeight;
+				FVector Center = FVector(0, 0, 0);
+				Aov = Aov * FreeWeight;
+				FVector Flow = FVector(0, 0, 0);
+				int BoidNum = 0;
+
+				for (AMyBoid* Bird : NearBoids)
+				{
+					FVector OffsetVector = Bird->GetActorLocation() - GetActorLocation();
+					float Distence = OffsetVector.Size();
+
+					if (Distence <= ViewRadius)
+					{
+						Center += Bird->GetActorLocation();
+						Flow += Bird->GetCurVelocity();
+						BoidNum++;
+
+						if (Distence <= AovRadius)
+						{
+							Aov -= OffsetVector / (Distence * Distence);
+						}
+					}
+				}
+				if (BoidNum > 0)
+				{
+					CurAcceleration += (Center / BoidNum - GetActorLocation()) * CenterWeight;
+					CurAcceleration += (Flow + GoalDirection) / (float)BoidNum * FlowWeight;
+				}
+				CurAcceleration += Aov * AovWeight;
+				//CurAcceleration = CurAcceleration.GetSafeNormal(0.0001f) * FMath::Clamp(CurAcceleration.Size(), 0.0f, 1.0f);
+				//UE_LOG(LogTemp, Warning, TEXT("NearBoids"));
 			}
-			CurAcceleration += Aov * AovWeight;
-			//CurAcceleration = CurAcceleration.GetSafeNormal(0.0001f) * FMath::Clamp(CurAcceleration.Size(), 0.0f, 1.0f);
-			//UE_LOG(LogTemp, Warning, TEXT("NearBoids"));
+		}
+		else
+		{
+			int BoidNearNum = FMyBoidModule::Get().BoidInfoSave.BoidBase[BirdId].BoidNearNum;
+			FVector Center = FMyBoidModule::Get().BoidInfoSave.BoidBase[BirdId].Center;
+			FVector Flow = FMyBoidModule::Get().BoidInfoSave.BoidBase[BirdId].Flow;
+			FVector AovOut = FMyBoidModule::Get().BoidInfoSave.BoidBase[BirdId].AovOut;
+			if (BoidNearNum > 0 && !IsCollision)
+			{
+				Aov = Aov * FreeWeight - AovOut;
+				CurAcceleration += (Center / BoidNearNum - GetActorLocation()) * CenterWeight;
+				CurAcceleration += (Flow + GoalDirection) / (float)BoidNearNum * FlowWeight;
+				CurAcceleration += Aov * AovWeight;
+			}
 		}
 	}
 
@@ -116,11 +137,10 @@ void AMyBoid::Tick(float DeltaTime)
 
 	CurVelocity += CurAcceleration;
 	CurVelocity = CurVelocity.GetSafeNormal(0.0001f) * FMath::Clamp(CurVelocity.Size(), SpeedMin, SpeedMax);
+	CurVelocity.Z = 0;
 	FVector NewLoc = GetActorLocation() + CurVelocity;
-	NewLoc.X = ClampPos(NewLoc.X);
-	NewLoc.Y = ClampPos(NewLoc.Y);
-	NewLoc.Z = ClampPos(NewLoc.Z);
-
+	NewLoc = ClampPos(NewLoc);
+	NewLoc.Z = -150;
 	SetActorLocation(NewLoc, true);
 	SetActorRotation(FRotationMatrix::MakeFromX(CurVelocity.GetSafeNormal(0.0001f)).Rotator());
 }
@@ -162,13 +182,13 @@ void AMyBoid::SetIsCollosionFalse()
 	IsCollision = false;
 }
 
-float AMyBoid::ClampPos(float Pos)
+FVector AMyBoid::ClampPos(FVector Pos)
 {
-	float offset = FMath::Abs(Pos) - TestBoxSize;
-
-	if (offset > 0)
+	if (FMath::Abs(SpawnLocation.X - Pos.X) > TestBoxSize ||
+		FMath::Abs(SpawnLocation.Y - Pos.Y) > TestBoxSize ||
+		FMath::Abs(SpawnLocation.Z - Pos.Z) > TestBoxSize)
 	{
-		return TestBoxSize * Pos / FMath::Abs(Pos) * (-1.0f) + offset * Pos / FMath::Abs(Pos);
+		return SpawnLocation;
 	}
 	return Pos;
 }

@@ -1,12 +1,48 @@
 #include "/Engine/Public/Platform.ush"
 static const int threadGroupSize = 2;
 
-RWBuffer<int> TestParameters;
-int NumBoid;
+struct BoidBase
+{
+    float3 Position;
+    float3 Velocity;
+    float3 Center;
+    float3 Flow;
+    float3 AovOut;
+    int BoidNearNum;
+};
 
+int NumTotal;
+float AovRadius;
+float ViewRadius;
+
+RWStructuredBuffer<BoidBase> BoidBaseParam;
 
 [numthreads(threadGroupSize, 1, 1)]
 void MainCS(uint3 ThreadId : SV_DispatchThreadID)
 {
-	TestParameters[ThreadId.x] += ThreadId.x;
+    int self = ThreadId.x;
+    BoidBaseParam[self].Center = float3(0, 0, 0);
+    BoidBaseParam[self].AovOut = float3(0, 0, 0);
+    BoidBaseParam[self].Flow = float3(0, 0, 0);
+    BoidBaseParam[self].BoidNearNum = 0;
+
+    for(int i=0; i<NumTotal; i++)
+    {
+        if(i != self)
+        {
+            float3 Offset = BoidBaseParam[i].Position -  BoidBaseParam[self].Position;
+            float DistenceSqrt = Offset.x*Offset.x + Offset.y*Offset.y + Offset.z*Offset.z;
+            if(DistenceSqrt <= ViewRadius * ViewRadius)
+            {
+                BoidBaseParam[self].Center += BoidBaseParam[i].Position;
+                BoidBaseParam[self].Flow += BoidBaseParam[i].Velocity;
+                BoidBaseParam[self].BoidNearNum += 1;
+                   
+                if(DistenceSqrt <= AovRadius * AovRadius)
+                {
+                     BoidBaseParam[self].AovOut += Offset/DistenceSqrt;
+                }
+            }
+        }
+    }
 }
