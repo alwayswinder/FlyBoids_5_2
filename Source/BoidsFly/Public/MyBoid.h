@@ -27,6 +27,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	FVector GetCurVelocity();
 	bool GetIsCollosion();
+	void UpdateBird(bool UseComputeShader);
 	/*Value*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	int BirdId = 0;
@@ -58,16 +59,12 @@ public:
 	FVector GoalDirection;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	FVector SpawnLocation;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	bool FindOther = true;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	bool UseGPU = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	FVector Aov;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	FVector AovOut;
+	FVector DebugVector;
+	UFUNCTION(BlueprintCallable, Category = "Setting")
+	void AddSelfToManage();
 private:
 	/*Value*/
 	FVector CurVelocity;
@@ -77,6 +74,8 @@ private:
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypesWall;
 	TArray<AActor*> IgnoryActors;
 	FTimerHandle CollisionTimer;
+	FVector Aov;
+	FVector CurAcceleration;
 
 	bool GetRaysVectors();
 	void SetIsCollosionFalse();

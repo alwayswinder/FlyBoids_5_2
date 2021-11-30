@@ -4,7 +4,8 @@
 #include "MyBoid.h"
 #include "Kismet\KismetSystemLibrary.h"
 #include "../BoidsFly.h"
-
+#include "../BoidsFlyGameModeBase.h"
+#include "Kismet\GameplayStatics.h"
 
 
 // Sets default values
@@ -27,12 +28,31 @@ void AMyBoid::BeginPlay()
 void AMyBoid::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	FVector CurAcceleration = FVector(0,0,0);
+	ABoidsFlyGameModeBase* Gm = Cast<ABoidsFlyGameModeBase>(UGameplayStatics::GetGameMode(this));
+	if (Gm && !(Gm->UseGPU))
+	{
+		UpdateBird(false);
+	}
+}
+
+FVector AMyBoid::GetCurVelocity()
+{
+	return CurVelocity;
+}
+
+bool AMyBoid::GetIsCollosion()
+{
+	return IsCollision;
+}
+
+void AMyBoid::UpdateBird(bool UseComputeShader)
+{
+	CurAcceleration = FVector(0, 0, 0);
 
 	//æ€∫œ£¨Õ¨––£¨±‹»√
 	if (FindOther)
 	{
-		if (!UseGPU)
+		if (!UseComputeShader)
 		{
 			TArray<AMyBoid*> NearBoids;
 
@@ -78,6 +98,7 @@ void AMyBoid::Tick(float DeltaTime)
 				if (BoidNum > 0)
 				{
 					CurAcceleration += (Center / BoidNum - GetActorLocation()) * CenterWeight;
+					DebugVector = Center / BoidNum;
 					CurAcceleration += (Flow + GoalDirection) / (float)BoidNum * FlowWeight;
 				}
 				CurAcceleration += Aov * AovWeight;
@@ -95,6 +116,7 @@ void AMyBoid::Tick(float DeltaTime)
 			{
 				Aov = Aov * FreeWeight - AovOut;
 				CurAcceleration += (Center / BoidNearNum - GetActorLocation()) * CenterWeight;
+				DebugVector = Center / BoidNearNum;
 				CurAcceleration += (Flow + GoalDirection) / (float)BoidNearNum * FlowWeight;
 				CurAcceleration += Aov * AovWeight;
 			}
@@ -137,22 +159,15 @@ void AMyBoid::Tick(float DeltaTime)
 
 	CurVelocity += CurAcceleration;
 	CurVelocity = CurVelocity.GetSafeNormal(0.0001f) * FMath::Clamp(CurVelocity.Size(), SpeedMin, SpeedMax);
-	CurVelocity.Z = 0;
 	FVector NewLoc = GetActorLocation() + CurVelocity;
 	NewLoc = ClampPos(NewLoc);
-	NewLoc.Z = -150;
 	SetActorLocation(NewLoc, true);
 	SetActorRotation(FRotationMatrix::MakeFromX(CurVelocity.GetSafeNormal(0.0001f)).Rotator());
 }
 
-FVector AMyBoid::GetCurVelocity()
+void AMyBoid::AddSelfToManage()
 {
-	return CurVelocity;
-}
-
-bool AMyBoid::GetIsCollosion()
-{
-	return IsCollision;
+	FMyBoidModule::Get().BoidInfoSave.BoidBase.Add(BirdId, FMyBoidBase(GetActorLocation(), CurVelocity));
 }
 
 bool AMyBoid::GetRaysVectors()

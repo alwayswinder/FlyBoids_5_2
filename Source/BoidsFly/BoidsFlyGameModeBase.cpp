@@ -17,44 +17,60 @@ void ABoidsFlyGameModeBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	if (UseGPU)
 	{
-		ComputeTest();
+		ComputeBoid();
 	}
 }
 
-void ABoidsFlyGameModeBase::ComputeTest()
+void ABoidsFlyGameModeBase::BeginPlay()
 {
-	RenderEveryFrameLock.Lock();
-	FMyBoidModule::Get().BoidInfoSave.AovRadius = 20;
-	FMyBoidModule::Get().BoidInfoSave.ViewRadius = 100;
-	//FMyBoidModule::Get().BoidInfoSave.BoidBase.Empty();
+	Super::BeginPlay();
+}
+
+void ABoidsFlyGameModeBase::ComputeBoid()
+{
 	TArray<AActor*> AllBoid;
 	UGameplayStatics::GetAllActorsOfClass(this, AMyBoid::StaticClass(), AllBoid);
-	FMyBoidModule::Get().BoidInfoSave.NumTotal = AllBoid.Num();
-
-	for (int i=0; i< AllBoid.Num(); i++)
+	for (int i=0; i<AllBoid.Num(); i++)
 	{
 		AMyBoid* Bird = Cast<AMyBoid>(AllBoid[i]);
 		if (Bird)
 		{
-			if (!FMyBoidModule::Get().BoidInfoSave.BoidBase.Contains(i))
+			if (FMyBoidModule::Get().BoidInfoSave.BoidBase.Contains(i))
 			{
-				FMyBoidModule::Get().BoidInfoSave.BoidBase.Add(Bird->BirdId, FMyBoidBase(Bird->GetActorLocation(), Bird->GetCurVelocity()));
+				FMyBoidModule::Get().BoidInfoSave.BoidBase[i].Position = Bird->GetActorLocation();
+				FMyBoidModule::Get().BoidInfoSave.BoidBase[i].Velocity = Bird->GetCurVelocity();
 			}
 		}
 	}
-	RenderEveryFrameLock.Unlock();
-
-	ENQUEUE_RENDER_COMMAND(BackgroundTickRenderThread)(
-		[](FRHICommandListImmediate& RHICmdList) {
-		FMyBoidModule::Get().RunComputeShader(RHICmdList);
-	});
-	/*
+	if (AllBoid.Num() == FMyBoidModule::Get().BoidInfoSave.BoidBase.Num())
+	{
+		ENQUEUE_RENDER_COMMAND(BoidCompute)(
+			[](FRHICommandListImmediate& RHICmdList) {
+			FMyBoidModule::Get().RunComputeShader(RHICmdList);
+		});
+		FlushRenderingCommands();
+		ENQUEUE_RENDER_COMMAND(BoidResult)(
+			[](FRHICommandListImmediate& RHICmdList) {
+			FMyBoidModule::Get().GetComputeShaderResult(RHICmdList);
+		});
+		FlushRenderingCommands();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Boid Num Error!!!!!!Numtotal=%d, BoidNum=%d, BoidBaseNum=%d"), AllBoid.Num(), FMyBoidModule::Get().BoidInfoSave.BoidBase.Num());
+	}
+	
 	for (int i = 0; i < AllBoid.Num(); i++)
 	{
-		if (FMyBoidModule::Get().BoidInfoSave.BoidBase.Contains(i))
+		AMyBoid* Bird = Cast<AMyBoid>(AllBoid[i]);
+		if (Bird)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("BoidId = %d, BoidNearNum = %d"), i, FMyBoidModule::Get().BoidInfoSave.BoidBase[i].BoidNearNum);
+			Bird->UpdateBird(true);
 		}
 	}
-	UE_LOG(LogTemp, Warning, TEXT("DOonce!!!!!!"));*/
+}
+
+void ABoidsFlyGameModeBase::ClearBoidBase()
+{
+	FMyBoidModule::Get().BoidInfoSave.BoidBase.Empty();
 }

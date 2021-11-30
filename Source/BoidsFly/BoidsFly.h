@@ -24,7 +24,6 @@ struct FMyBoidBase
 struct FMyBoidAttribute
 {
 	TMap<int, FMyBoidBase> BoidBase;
-	int NumTotal = 0;
 	float AovRadius = 20;
 	float ViewRadius = 100;
 };
@@ -42,6 +41,8 @@ public:
 		return FModuleManager::Get().IsModuleLoaded("BoidsFly");
 	}
 	void RunComputeShader(FRHICommandListImmediate& RHICmdList);
+	void GetComputeShaderResult(FRHICommandListImmediate& RHICmdList);
+
 
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;

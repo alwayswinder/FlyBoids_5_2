@@ -42,7 +42,7 @@ void FMyBoidModule::RunComputeShader(FRHICommandListImmediate& RHICmdList)
 {
 	TResourceArray<FMyBoidBase> InitialBoidBaseParams;
 
-	for (int i=0; i<BoidInfoSave.NumTotal; i++)
+	for (int i=0; i<BoidInfoSave.BoidBase.Num(); i++)
 	{
 		InitialBoidBaseParams.Add(BoidInfoSave.BoidBase[i]);
 	}
@@ -50,7 +50,7 @@ void FMyBoidModule::RunComputeShader(FRHICommandListImmediate& RHICmdList)
 	//BoidInputBuffer.Initialize(sizeof(FMyBoidInput), 10, PF_Unknown, BUF_UnorderedAccess | BUF_SourceCopy, TEXT("BoidInputBuffer"), &InitialInputParams);
 	
 	FRHIResourceCreateInfo CreateInfoBoidBase(&InitialBoidBaseParams);
-	BoidBaseBuffer = RHICreateStructuredBuffer(sizeof(FMyBoidBase), sizeof(FMyBoidBase) * BoidInfoSave.NumTotal, BUF_UnorderedAccess | BUF_ShaderResource, CreateInfoBoidBase);
+	BoidBaseBuffer = RHICreateStructuredBuffer(sizeof(FMyBoidBase), sizeof(FMyBoidBase) * BoidInfoSave.BoidBase.Num(), BUF_UnorderedAccess | BUF_ShaderResource, CreateInfoBoidBase);
 	BoidBaseRecordsUAV = RHICreateUnorderedAccessView(BoidBaseBuffer, false, false);
 
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_BoidFly_ComputeShader); // Used to gather CPU profiling data for the UE4 session frontend
@@ -60,19 +60,21 @@ void FMyBoidModule::RunComputeShader(FRHICommandListImmediate& RHICmdList)
 
 	FMyBoidComputeShader::FParameters PassParameters;
 	PassParameters.BoidBaseParam = BoidBaseRecordsUAV;
-	PassParameters.NumTotal = BoidInfoSave.NumTotal;
+	PassParameters.NumTotal = BoidInfoSave.BoidBase.Num();
 	PassParameters.AovRadius = BoidInfoSave.AovRadius;
 	PassParameters.ViewRadius = BoidInfoSave.ViewRadius;
 
-	FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, PassParameters, FIntVector(BoidInfoSave.NumTotal, 1, 1));
+	FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, PassParameters, FIntVector(BoidInfoSave.BoidBase.Num(), 1, 1));
+}
 
-	FMyBoidBase* Buffer = (FMyBoidBase*)RHICmdList.LockStructuredBuffer(BoidBaseBuffer, 0, sizeof(FMyBoidBase)*BoidInfoSave.NumTotal, EResourceLockMode::RLM_ReadOnly);
-	for (int i=0; i<BoidInfoSave.NumTotal; i++)
+void FMyBoidModule::GetComputeShaderResult(FRHICommandListImmediate& RHICmdList)
+{
+	FMyBoidBase* Buffer = (FMyBoidBase*)RHICmdList.LockStructuredBuffer(BoidBaseBuffer, 0, sizeof(FMyBoidBase) * BoidInfoSave.BoidBase.Num(), EResourceLockMode::RLM_ReadOnly);
+	for (int i = 0; i < BoidInfoSave.BoidBase.Num(); i++)
 	{
 		BoidInfoSave.BoidBase[i] = Buffer[i];
 	}
 	RHICmdList.UnlockStructuredBuffer(BoidBaseBuffer);
-
 }
 
 void FMyBoidModule::StartupModule()

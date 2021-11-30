@@ -16,11 +16,14 @@ public:
 	ABoidsFlyGameModeBase();
 
 	virtual void Tick(float DeltaTime) override;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "Boid")
+	virtual void BeginPlay() override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boid")
 	bool UseGPU = true;
 	UFUNCTION(BlueprintCallable)
-	void ComputeTest();
+	void ComputeBoid();
+	UFUNCTION(BlueprintCallable)
+	void ClearBoidBase();
 
 	FCriticalSection RenderEveryFrameLock;
 };
