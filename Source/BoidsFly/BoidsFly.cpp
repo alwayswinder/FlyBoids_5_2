@@ -49,7 +49,7 @@ void FMyBoidModule::RunComputeShader(FRHICommandListImmediate& RHICmdList)
 
 	//BoidInputBuffer.Initialize(sizeof(FMyBoidInput), 10, PF_Unknown, BUF_UnorderedAccess | BUF_SourceCopy, TEXT("BoidInputBuffer"), &InitialInputParams);
 	
-	FRHIResourceCreateInfo CreateInfoBoidBase(&InitialBoidBaseParams);
+	FRHIResourceCreateInfo CreateInfoBoidBase(TEXT("BoidCompute"), &InitialBoidBaseParams);
 	BoidBaseBuffer = RHICreateStructuredBuffer(sizeof(FMyBoidBase), sizeof(FMyBoidBase) * BoidInfoSave.BoidBase.Num(), BUF_UnorderedAccess | BUF_ShaderResource, CreateInfoBoidBase);
 	BoidBaseRecordsUAV = RHICreateUnorderedAccessView(BoidBaseBuffer, false, false);
 
@@ -69,12 +69,12 @@ void FMyBoidModule::RunComputeShader(FRHICommandListImmediate& RHICmdList)
 
 void FMyBoidModule::GetComputeShaderResult(FRHICommandListImmediate& RHICmdList)
 {
-	FMyBoidBase* Buffer = (FMyBoidBase*)RHICmdList.LockStructuredBuffer(BoidBaseBuffer, 0, sizeof(FMyBoidBase) * BoidInfoSave.BoidBase.Num(), EResourceLockMode::RLM_ReadOnly);
+	FMyBoidBase* Buffer = (FMyBoidBase*)RHICmdList.LockBuffer(BoidBaseBuffer, 0, sizeof(FMyBoidBase) * BoidInfoSave.BoidBase.Num(), EResourceLockMode::RLM_ReadOnly);
 	for (int i = 0; i < BoidInfoSave.BoidBase.Num(); i++)
 	{
 		BoidInfoSave.BoidBase[i] = Buffer[i];
 	}
-	RHICmdList.UnlockStructuredBuffer(BoidBaseBuffer);
+	RHICmdList.UnlockBuffer(BoidBaseBuffer);
 }
 
 void FMyBoidModule::StartupModule()

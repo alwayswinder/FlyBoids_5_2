@@ -64,7 +64,7 @@ void AMyBoid::UpdateBird(bool UseComputeShader)
 			{
 				if (hit.bBlockingHit)
 				{
-					AMyBoid* Bird = Cast<AMyBoid>(hit.Actor);
+					AMyBoid* Bird = Cast<AMyBoid>(hit.GetActor());
 					if (Bird && !Bird->GetIsCollosion())
 					{
 						NearBoids.Add(Bird);
