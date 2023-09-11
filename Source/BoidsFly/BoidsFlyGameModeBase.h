@@ -18,12 +18,4 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boid")
-	bool UseGPU = true;
-	UFUNCTION(BlueprintCallable)
-	void ComputeBoid();
-	UFUNCTION(BlueprintCallable)
-	void ClearBoidBase();
-
-	FCriticalSection RenderEveryFrameLock;
 };

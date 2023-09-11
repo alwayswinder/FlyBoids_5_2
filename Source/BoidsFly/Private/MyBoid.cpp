@@ -28,8 +28,7 @@ void AMyBoid::BeginPlay()
 void AMyBoid::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	ABoidsFlyGameModeBase* Gm = Cast<ABoidsFlyGameModeBase>(UGameplayStatics::GetGameMode(this));
-	if (Gm && !(Gm->UseGPU))
+	if (BoidsManagerRef && !(BoidsManagerRef->UseGPU))
 	{
 		UpdateBird(false);
 	}
@@ -99,7 +98,7 @@ void AMyBoid::UpdateBird(bool UseComputeShader)
 				{
 					CurAcceleration += (Center / BoidNum - GetActorLocation()) * CenterWeight;
 					DebugVector = Center / BoidNum;
-					CurAcceleration += (Flow + GoalDirection) / (float)BoidNum * FlowWeight;
+					CurAcceleration += (Flow + BoidsManagerRef->GoalDirection) / (float)BoidNum * FlowWeight;
 				}
 				CurAcceleration += Aov * AovWeight;
 				//CurAcceleration = CurAcceleration.GetSafeNormal(0.0001f) * FMath::Clamp(CurAcceleration.Size(), 0.0f, 1.0f);
@@ -108,16 +107,16 @@ void AMyBoid::UpdateBird(bool UseComputeShader)
 		}
 		else
 		{
-			int BoidNearNum = FMyBoidModule::Get().BoidInfoSave.BoidBase[BirdId].BoidNearNum;
-			FVector Center = FMyBoidModule::Get().BoidInfoSave.BoidBase[BirdId].Center;
-			FVector Flow = FMyBoidModule::Get().BoidInfoSave.BoidBase[BirdId].Flow;
-			FVector AovOut = FMyBoidModule::Get().BoidInfoSave.BoidBase[BirdId].AovOut;
+			int BoidNearNum = BoidsManagerRef->BoidInfoSave.BoidBase[BirdId].BoidNearNum;
+			FVector Center = BoidsManagerRef->BoidInfoSave.BoidBase[BirdId].Center;
+			FVector Flow = BoidsManagerRef->BoidInfoSave.BoidBase[BirdId].Flow;
+			FVector AovOut = BoidsManagerRef->BoidInfoSave.BoidBase[BirdId].AovOut;
 			if (BoidNearNum > 0 && !IsCollision)
 			{
 				Aov = Aov * FreeWeight - AovOut;
 				CurAcceleration += (Center / BoidNearNum - GetActorLocation()) * CenterWeight;
 				DebugVector = Center / BoidNearNum;
-				CurAcceleration += (Flow + GoalDirection) / (float)BoidNearNum * FlowWeight;
+				CurAcceleration += (Flow + BoidsManagerRef->GoalDirection) / (float)BoidNearNum * FlowWeight;
 				CurAcceleration += Aov * AovWeight;
 			}
 		}
@@ -165,9 +164,15 @@ void AMyBoid::UpdateBird(bool UseComputeShader)
 	SetActorRotation(FRotationMatrix::MakeFromX(CurVelocity.GetSafeNormal(0.0001f)).Rotator());
 }
 
-void AMyBoid::AddSelfToManage()
+void AMyBoid::AddSelfToManage(int Id, FVector SpawnLoc, ABoidsManager* Manager)
 {
-	FMyBoidModule::Get().BoidInfoSave.BoidBase.Add(BirdId, FMyBoidBase(GetActorLocation(), CurVelocity));
+	if(Manager)
+	{
+		BirdId = Id;
+		SpawnLocation = SpawnLoc;
+		BoidsManagerRef = Manager;
+		BoidsManagerRef->BoidInfoSave.BoidBase.Add(BirdId, FMyBoidBase(GetActorLocation(), CurVelocity));
+	}
 }
 
 bool AMyBoid::GetRaysVectors()

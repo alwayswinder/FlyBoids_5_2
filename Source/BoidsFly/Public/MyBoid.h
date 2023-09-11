@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BoidsManager.h"
 #include "GameFramework/Actor.h"
 #include "MyBoid.generated.h"
 
@@ -28,43 +29,61 @@ public:
 	FVector GetCurVelocity();
 	bool GetIsCollosion();
 	void UpdateBird(bool UseComputeShader);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	ABoidsManager* BoidsManagerRef;
 	/*Value*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	int BirdId = 0;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float SpeedMin = 0.5;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float SpeedMax = 0.7;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float ViewRadius = 100.0;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float AovRadius = 20.0;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float CenterWeight = 0.05;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float FlowWeight = 1.0;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float AovWeight = 1.0;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float FreeWeight = 0.9;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float CollosionWeight = 0.02;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float leaveWallWeight = 0.5;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float TestBoxSize = 1000;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	float LeaveTime = 0.5;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	FVector GoalDirection;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	FVector SpawnLocation;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	bool FindOther = true;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
 	FVector DebugVector;
+	
 	UFUNCTION(BlueprintCallable, Category = "Setting")
-	void AddSelfToManage();
+	void AddSelfToManage(int Id, FVector SpawnLoc, ABoidsManager* Manager);
+	
 private:
 	/*Value*/
 	FVector CurVelocity;
